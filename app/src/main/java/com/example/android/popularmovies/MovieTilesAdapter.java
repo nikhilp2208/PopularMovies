@@ -27,14 +27,19 @@ public class MovieTilesAdapter extends ArrayAdapter<String> {
     }
 
     @Override
+    public int getCount() {
+        return urls.size();
+    }
+
+    @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         if (convertView == null) {
-            convertView = LayoutInflater.from(getContext()).inflate(movieLayout, parent, false);
+            convertView = LayoutInflater.from(context).inflate(movieLayout, parent, false);
         }
 
         ImageView view = (ImageView) convertView.findViewById(R.id.movie_tile_image_view);
         String url = getItem(position);
-        Picasso.with(getContext()).load(url).into(view);
+        Picasso.with(context).load(url).into(view);
         return convertView;
     }
 }

@@ -38,8 +38,8 @@ public class MainActivityFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-        String[] strings = {"http://image.tmdb.org/t/p/w185/nBNZadXqJSdt05SHLqgT0HuC5Gm.jpg","http://image.tmdb.org/t/p/w185/D6e8RJf2qUstnfkTslTXNTUAlT.jpg"};
-        List<String> urlList = new ArrayList<String>(Arrays.asList(strings));
+//        String[] strings = {"http://image.tmdb.org/t/p/w185/nBNZadXqJSdt05SHLqgT0HuC5Gm.jpg","http://image.tmdb.org/t/p/w185/D6e8RJf2qUstnfkTslTXNTUAlT.jpg"};
+//        List<String> urlList = new ArrayList<String>(Arrays.asList(strings));
         mMovieTilesAdapter = new MovieTilesAdapter(getActivity(),R.layout.movie_tile,new ArrayList<String>());
         GridView gridView = (GridView) rootView.findViewById(R.id.movies_grid);
         gridView.setAdapter(mMovieTilesAdapter);

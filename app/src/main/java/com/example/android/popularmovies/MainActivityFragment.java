@@ -11,10 +11,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.GridView;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,8 +18,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -38,9 +32,7 @@ public class MainActivityFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-//        String[] strings = {"http://image.tmdb.org/t/p/w185/nBNZadXqJSdt05SHLqgT0HuC5Gm.jpg","http://image.tmdb.org/t/p/w185/D6e8RJf2qUstnfkTslTXNTUAlT.jpg"};
-//        List<String> urlList = new ArrayList<String>(Arrays.asList(strings));
-        mMovieTilesAdapter = new MovieTilesAdapter(getActivity(),R.layout.movie_tile,new ArrayList<String>());
+        mMovieTilesAdapter = new MovieTilesAdapter(getActivity(),R.layout.movie_tile,new ArrayList<MovieData>());
         GridView gridView = (GridView) rootView.findViewById(R.id.movies_grid);
         gridView.setAdapter(mMovieTilesAdapter);
         gridView.setNumColumns((Configuration.ORIENTATION_PORTRAIT == getResources().getConfiguration().orientation) ? 2 : 4);
@@ -55,30 +47,13 @@ public class MainActivityFragment extends Fragment {
         fetchPopularMoviesTask.execute("popularity.desc");
     }
 
-    public class FetchPopularMoviesTask extends AsyncTask<String,Void,String[]> {
-
-        private String[] getPosterUrls(String popularMoviesJsonString) throws JSONException {
-            final String PM_RESULT = "results";
-            final String PM_POSTER_PATH = "poster_path";
-            final String IMAGE_BASE_URL = "http://image.tmdb.org/t/p/w185";
-            JSONObject popularMovies = new JSONObject(popularMoviesJsonString);
-            JSONArray popularMoviesList = popularMovies.getJSONArray(PM_RESULT);
-            int moviesCount = popularMoviesList.length();
-            String[] posterUrls = new String[moviesCount];
-            Log.v("POSTERURL_COUNT",Integer.toString(moviesCount));
-            for (int i = 0; i < moviesCount ; i++ ) {
-                JSONObject movieDetails = popularMoviesList.getJSONObject(i);
-                posterUrls[i] = IMAGE_BASE_URL+movieDetails.getString(PM_POSTER_PATH);
-                Log.v("POSTER_URL",posterUrls[i]);
-            }
-            return posterUrls;
-        }
+    public class FetchPopularMoviesTask extends AsyncTask<String,Void,ArrayList<MovieData>> {
 
         @Override
-        protected String[] doInBackground(String... sort_by) {
+        protected ArrayList<MovieData> doInBackground(String... sort_by) {
             final String API_KEY_PARAM = "api_key";
             final String SORT_BY_PARAM = "sort_by";
-            final String API_KEY = "API_KEY";
+            final String API_KEY = getString(R.string.tmdb_api_key);
             final String BASE_URI = "http://api.themoviedb.org/3/discover/movie";
             final String LOG_TAG = this.getClass().getSimpleName();
             HttpURLConnection httpURLConnection = null;
@@ -106,8 +81,8 @@ public class MainActivityFragment extends Fragment {
                 popularMovies = stringBuffer.toString();
                 Log.v(LOG_TAG,popularMovies);
                 try {
-                    return getPosterUrls(popularMovies);
-                } catch (JSONException e) {
+                    return MovieDataParser.fetch(popularMovies);
+                } catch (Exception e) {
                     Log.e(LOG_TAG,e.getMessage(),e);
                     e.printStackTrace();
                     return null;
@@ -134,12 +109,11 @@ public class MainActivityFragment extends Fragment {
         }
 
         @Override
-        protected void onPostExecute(String[] imageUrls) {
-            super.onPostExecute(imageUrls);
-            if (imageUrls != null) {
-                List<String> urlList = new ArrayList<String>(Arrays.asList(imageUrls));
+        protected void onPostExecute(ArrayList<MovieData> moviesData) {
+            super.onPostExecute(moviesData);
+            if (moviesData != null) {
                 mMovieTilesAdapter.clear();
-                mMovieTilesAdapter.addAll(urlList);
+                mMovieTilesAdapter.addAll(moviesData);
                 mMovieTilesAdapter.notifyDataSetChanged();
             }
         }

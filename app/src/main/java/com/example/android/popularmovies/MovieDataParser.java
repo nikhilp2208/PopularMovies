@@ -22,7 +22,9 @@ public class MovieDataParser {
     private static final String KEY_POPULARITY = "popularity";
     private static final String KEY_VOTE_COUNT = "vote_count";
     private static final String KEY_VOTE_AVERAGE = "vote_average";
-    private static final String IMAGE_BASE_URL = "http://image.tmdb.org/t/p/w185";
+    private static final String IMAGE_BASE_URL = "http://image.tmdb.org/t/p/";
+    private static final String POSTER_IMAGE_SIZE = "w185";
+    private static final String BACKDROP_IMAGE_SIZE = "w342";
     private static final String LOG_TAG = "MovieDataParser";
 
     public static ArrayList<MovieData> fetch(String popularMoviesJson) {
@@ -37,12 +39,12 @@ public class MovieDataParser {
             for (int i = 0; i < moviesCount ; i++ ) {
                 MovieData movieData = new MovieData();
                 JSONObject movieJsonObject = popularMoviesList.getJSONObject(i);
-                movieData.poster_path = IMAGE_BASE_URL+movieJsonObject.getString(KEY_POSTER_PATH);
+                movieData.poster_path = IMAGE_BASE_URL+POSTER_IMAGE_SIZE+movieJsonObject.getString(KEY_POSTER_PATH);
                 movieData.overview = movieJsonObject.getString(KEY_OVERVIEW);
                 movieData.release_date = movieJsonObject.getString(KEY_RELEASE_DATE);
                 movieData.movie_id = Long.parseLong(movieJsonObject.getString(KEY_ID));
                 movieData.title = movieJsonObject.getString(KEY_TITLE);
-                movieData.backdrop_path = IMAGE_BASE_URL+movieJsonObject.getString(KEY_BACKDROP_PATH);
+                movieData.backdrop_path = IMAGE_BASE_URL+BACKDROP_IMAGE_SIZE+movieJsonObject.getString(KEY_BACKDROP_PATH);
                 movieData.popularity = Float.parseFloat(movieJsonObject.getString(KEY_POPULARITY));
                 movieData.vote_count = Integer.parseInt(movieJsonObject.getString(KEY_VOTE_COUNT));
                 movieData.vote_average = Float.parseFloat(movieJsonObject.getString(KEY_VOTE_AVERAGE));

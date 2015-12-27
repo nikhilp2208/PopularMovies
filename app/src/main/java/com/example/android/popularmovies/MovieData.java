@@ -36,7 +36,7 @@ public class MovieData implements Parcelable {
     public static final Creator<MovieData> CREATOR = new Creator<MovieData>() {
         @Override
         public MovieData createFromParcel(Parcel parcel) {
-            return null;
+            return (new MovieData(parcel));
         }
 
         @Override

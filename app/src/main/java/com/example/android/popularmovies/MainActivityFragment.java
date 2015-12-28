@@ -1,9 +1,11 @@
 package com.example.android.popularmovies;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.util.Log;
@@ -26,6 +28,8 @@ import java.util.ArrayList;
  */
 public class MainActivityFragment extends Fragment {
     MovieTilesAdapter mMovieTilesAdapter;
+    SharedPreferences mPreferences;
+    String mSortPref;
 
     public MainActivityFragment() {
     }
@@ -43,7 +47,7 @@ public class MainActivityFragment extends Fragment {
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 Intent detailIntent = new Intent(getActivity(),DetailActivity.class);
                 MovieData movieData = mMovieTilesAdapter.getItem(i);
-                detailIntent.putExtra("movie_data",movieData);
+                detailIntent.putExtra(getString(R.string.parcellable_movie_data),movieData);
                 startActivity(detailIntent);
             }
         });
@@ -54,18 +58,32 @@ public class MainActivityFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+        mPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        mPreferences.registerOnSharedPreferenceChangeListener(listener);
+        mSortPref = mPreferences.getString(getString(R.string.pref_sort_key), getString(R.string.pref_sort_default));
         FetchPopularMoviesTask fetchPopularMoviesTask = new FetchPopularMoviesTask();
-        fetchPopularMoviesTask.execute("popularity.desc");
+        fetchPopularMoviesTask.execute(mSortPref);
     }
+
+    SharedPreferences.OnSharedPreferenceChangeListener listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+        @Override
+        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+            if(s == getString(R.string.pref_sort_key)) {
+                mSortPref = mPreferences.getString(getString(R.string.pref_sort_key), getString(R.string.pref_sort_default));
+                FetchPopularMoviesTask fetchPopularMoviesTask = new FetchPopularMoviesTask();
+                fetchPopularMoviesTask.execute(mSortPref);
+            }
+        }
+    };
 
     public class FetchPopularMoviesTask extends AsyncTask<String,Void,ArrayList<MovieData>> {
 
         @Override
         protected ArrayList<MovieData> doInBackground(String... sort_by) {
-            final String API_KEY_PARAM = "api_key";
-            final String SORT_BY_PARAM = "sort_by";
+            final String API_KEY_PARAM = getString(R.string.api_key_param);
+            final String SORT_BY_PARAM = getString(R.string.sort_by_param);
             final String API_KEY = getString(R.string.tmdb_api_key);
-            final String BASE_URI = "http://api.themoviedb.org/3/discover/movie";
+            final String BASE_URI = getString(R.string.themoviedb_base_uri);
             final String LOG_TAG = this.getClass().getSimpleName();
             HttpURLConnection httpURLConnection = null;
             BufferedReader bufferedReader = null;
@@ -73,6 +91,7 @@ public class MainActivityFragment extends Fragment {
             try {
                 Uri uri = Uri.parse(BASE_URI).buildUpon().appendQueryParameter(SORT_BY_PARAM,sort_by[0]).appendQueryParameter(API_KEY_PARAM,API_KEY).build();
                 URL url = new URL(uri.toString());
+                Log.v("URL",uri.toString());
                 httpURLConnection = (HttpURLConnection) url.openConnection();
                 httpURLConnection.setRequestMethod("GET");
                 httpURLConnection.connect();
@@ -92,7 +111,7 @@ public class MainActivityFragment extends Fragment {
                 popularMovies = stringBuffer.toString();
                 Log.v(LOG_TAG,popularMovies);
                 try {
-                    return MovieDataParser.fetch(popularMovies);
+                    return MovieDataParser.fetch(popularMovies,getContext());
                 } catch (Exception e) {
                     Log.e(LOG_TAG,e.getMessage(),e);
                     e.printStackTrace();

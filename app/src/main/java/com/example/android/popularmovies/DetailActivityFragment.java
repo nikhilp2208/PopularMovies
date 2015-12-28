@@ -5,11 +5,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -34,7 +32,7 @@ public class DetailActivityFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_detail, container, false);
         Activity activity = getActivity();
         Intent intent = activity.getIntent();
-        MovieData movie = (intent.getParcelableExtra("movie_data"));
+        MovieData movie = (intent.getParcelableExtra(getString(R.string.parcellable_movie_data)));
         TextView titleTextView = (TextView)view.findViewById(R.id.Title);
         TextView releaseTextView = (TextView)view.findViewById(R.id.release_date);
         TextView ratingTextView = (TextView)view.findViewById(R.id.rating);
@@ -45,7 +43,7 @@ public class DetailActivityFragment extends Fragment {
         Picasso.with(context).load(movie.backdrop_path).into(backDropImageView);
         Picasso.with(context).load(movie.poster_path).into(posterImageView);
         titleTextView.setText(movie.title);
-        releaseTextView.setText("Release Date: " + movie.release_date);
+        releaseTextView.setText(getString(R.string.release_date) + movie.release_date);
         ratingTextView.setText(Float.toString(movie.vote_average));
         descrptionTextView.setText(movie.overview);
 

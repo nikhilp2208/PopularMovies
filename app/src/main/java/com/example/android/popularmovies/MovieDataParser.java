@@ -1,5 +1,7 @@
 package com.example.android.popularmovies;
 
+import android.content.Context;
+import android.content.res.Resources;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -27,7 +29,7 @@ public class MovieDataParser {
     private static final String BACKDROP_IMAGE_SIZE = "w342";
     private static final String LOG_TAG = "MovieDataParser";
 
-    public static ArrayList<MovieData> fetch(String popularMoviesJson) {
+    public static ArrayList<MovieData> fetch(String popularMoviesJson,Context context) {
         ArrayList<MovieData> movieDataList = new ArrayList<MovieData>();
         if (popularMoviesJson == null) {
             return null;
@@ -39,7 +41,11 @@ public class MovieDataParser {
             for (int i = 0; i < moviesCount ; i++ ) {
                 MovieData movieData = new MovieData();
                 JSONObject movieJsonObject = popularMoviesList.getJSONObject(i);
-                movieData.poster_path = IMAGE_BASE_URL+POSTER_IMAGE_SIZE+movieJsonObject.getString(KEY_POSTER_PATH);
+                if (movieJsonObject.getString(KEY_POSTER_PATH) == "null") {
+                    movieData.poster_path = context.getString(R.string.default_image);
+                } else {
+                    movieData.poster_path = IMAGE_BASE_URL+POSTER_IMAGE_SIZE+movieJsonObject.getString(KEY_POSTER_PATH);
+                }
                 movieData.overview = movieJsonObject.getString(KEY_OVERVIEW);
                 movieData.release_date = movieJsonObject.getString(KEY_RELEASE_DATE);
                 movieData.movie_id = Long.parseLong(movieJsonObject.getString(KEY_ID));

@@ -1,5 +1,6 @@
 package com.example.android.popularmovies;
 
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
@@ -15,6 +16,8 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.GridView;
 
+import com.example.android.popularmovies.data.MoviesContract;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,6 +25,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Vector;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -111,7 +115,9 @@ public class MainActivityFragment extends Fragment {
                 popularMovies = stringBuffer.toString();
                 Log.v(LOG_TAG,popularMovies);
                 try {
-                    return MovieDataParser.fetch(popularMovies,getContext());
+                    ArrayList<MovieData> moviesArray = MovieDataParser.fetch(popularMovies, getContext());
+                    addMoviesToDb(moviesArray);
+                    return null;
                 } catch (Exception e) {
                     Log.e(LOG_TAG,e.getMessage(),e);
                     e.printStackTrace();
@@ -136,6 +142,37 @@ public class MainActivityFragment extends Fragment {
                     }
                 }
             }
+        }
+
+        private void addMoviesToDb(ArrayList<MovieData> moviesData) {
+            Vector<ContentValues> contentValuesVector = new Vector<ContentValues>(moviesData.size());
+
+            for (MovieData movieData : moviesData) {
+                ContentValues movieValues = new ContentValues();
+
+                movieValues.put(MoviesContract.MoviesEntry.COLUMN_MOVIE_ID, movieData.movie_id);
+                movieValues.put(MoviesContract.MoviesEntry.COLUMN_TITLE, movieData.title);
+                movieValues.put(MoviesContract.MoviesEntry.COLUMN_OVERVIEW, movieData.overview);
+                movieValues.put(MoviesContract.MoviesEntry.COLUMN_POSTER_PATH, movieData.poster_path);
+                movieValues.put(MoviesContract.MoviesEntry.COLUMN_BACKDROP_PATH, movieData.backdrop_path);
+                movieValues.put(MoviesContract.MoviesEntry.COLUMN_RELEASE_DATE, movieData.release_date);
+                movieValues.put(MoviesContract.MoviesEntry.COLUMN_VOTE_AVERAGE, movieData.vote_average);
+                movieValues.put(MoviesContract.MoviesEntry.COLUMN_VOTE_COUNT, movieData.vote_count);
+                movieValues.put(MoviesContract.MoviesEntry.COLUMN_POPULARITY, movieData.popularity);
+                movieValues.put(MoviesContract.MoviesEntry.COLUMN_FAVORITE, 0);
+
+                contentValuesVector.add(movieValues);
+
+            }
+
+            int inserted = 0;
+            if (contentValuesVector.size() > 0) {
+                ContentValues[] contentValues = new ContentValues[contentValuesVector.size()];
+                contentValuesVector.toArray(contentValues);
+
+                inserted = getContext().getContentResolver().bulkInsert(MoviesContract.MoviesEntry.CONTENT_URI,contentValues);
+            }
+            Log.d("DB_INSERT", "DB insert completed. count: " + inserted);
         }
 
         @Override

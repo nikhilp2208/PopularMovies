@@ -89,7 +89,11 @@ public class MainActivityFragment extends Fragment implements android.support.v4
                 Cursor cursor = (Cursor) adapterView.getItemAtPosition(i);
                 if (cursor != null) {
                     mCurrentPosition = i;
-                    ((Callback) getActivity()).onItemSelected(MoviesContract.MoviesEntry.buildMoviesUriWithMovieId(cursor.getString(COL_MOVIE_ID)));
+                    if (mSortPref.equals("favorite")) {
+                        ((Callback) getActivity()).onItemSelected(MoviesContract.FavoriteMoviesEntry.buildMoviesUriWithMovieId(cursor.getString(COL_MOVIE_ID)));
+                    } else {
+                        ((Callback) getActivity()).onItemSelected(MoviesContract.MoviesEntry.buildMoviesUriWithMovieId(cursor.getString(COL_MOVIE_ID)));
+                    }
                 }
 //                MovieData movieData = mMovieTilesAdapter.getItem(i);
 //                detailIntent.putExtra(getString(R.string.parcellable_movie_data),movieData);

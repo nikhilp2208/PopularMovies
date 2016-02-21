@@ -29,7 +29,7 @@ public class MoviesProvider extends ContentProvider {
             MoviesContract.MoviesEntry.COLUMN_MOVIE_ID + " = ? ";
 
     private static final String sFavMovieIdSelection = MoviesContract.FavoriteMoviesEntry.TABLE_NAME + "." +
-            MoviesContract.MoviesEntry.COLUMN_MOVIE_ID + " = ? ";
+            MoviesContract.FavoriteMoviesEntry.COLUMN_MOVIE_ID + " = ? ";
 
     @Override
     public boolean onCreate() {

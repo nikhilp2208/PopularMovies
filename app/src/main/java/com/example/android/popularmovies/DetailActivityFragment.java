@@ -62,7 +62,7 @@ public class DetailActivityFragment extends Fragment implements android.support.
     private static final int DETAIL_LOADER = 1;
 
     private static final String[] DETAIL_COLUMNS = {
-            MoviesContract.MoviesEntry.TABLE_NAME + "." + MoviesContract.MoviesEntry._ID,
+            MoviesContract.MoviesEntry._ID,
             MoviesContract.MoviesEntry.COLUMN_MOVIE_ID,
             MoviesContract.MoviesEntry.COLUMN_TITLE,
             MoviesContract.MoviesEntry.COLUMN_OVERVIEW,

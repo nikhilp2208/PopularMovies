@@ -54,6 +54,8 @@ public class DetailActivityFragment extends Fragment implements android.support.
     Uri mUri;
     Cursor mCursor;
 
+    public static final String DETAIL_URI = "detail_uri";
+
     private static final int DETAIL_LOADER = 1;
 
     private static final String[] DETAIL_COLUMNS = {
@@ -114,7 +116,12 @@ public class DetailActivityFragment extends Fragment implements android.support.
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_detail, container, false);
 
-        mUri = getActivity().getIntent().getData();
+        Bundle arguments = getArguments();
+        if (arguments != null) {
+            mUri = arguments.getParcelable(DetailActivityFragment.DETAIL_URI);
+        } else {
+            mUri = getActivity().getIntent().getData();
+        }
 //        Activity activity = getActivity();
 //        Intent intent = activity.getIntent();
 //        MovieData movie = (intent.getParcelableExtra(getString(R.string.parcellable_movie_data)));

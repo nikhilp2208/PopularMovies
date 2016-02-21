@@ -13,12 +13,25 @@ import android.view.MenuItem;
 
 public class MainActivity extends AppCompatActivity implements MainActivityFragment.Callback {
 
+    private final String LOG_TAG = this.getClass().getSimpleName();
+    private final String DETAILFRAGMENT_TAG = "DFTAG";
+    Boolean mTwoPane;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+
+        if (findViewById(R.id.movie_detail_container) != null) {
+            mTwoPane = true;
+
+            if (savedInstanceState == null) {
+//                getSupportFragmentManager().beginTransaction().replace(R.id.movie_detail_container, new DetailActivityFragment(), DETAILFRAGMENT_TAG).commit();
+            }
+        } else {
+            mTwoPane = false;
+            getSupportActionBar().setElevation(0f);
+        }
     }
 
     @Override
@@ -26,6 +39,12 @@ public class MainActivity extends AppCompatActivity implements MainActivityFragm
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
     }
 
     @Override
@@ -47,8 +66,19 @@ public class MainActivity extends AppCompatActivity implements MainActivityFragm
 
     @Override
     public void onItemSelected(Uri movieUri) {
-        Intent intent = new Intent(this, DetailActivity.class);
-        intent.setData(movieUri);
-        startActivity(intent);
+        if (mTwoPane) {
+            Bundle args = new Bundle();
+            args.putParcelable(DetailActivityFragment.DETAIL_URI,movieUri);
+
+            DetailActivityFragment fragment = new DetailActivityFragment();
+            fragment.setArguments(args);
+
+            getSupportFragmentManager().beginTransaction().replace(R.id.movie_detail_container,fragment,DETAILFRAGMENT_TAG).commit();
+
+        } else {
+            Intent intent = new Intent(this, DetailActivity.class);
+            intent.setData(movieUri);
+            startActivity(intent);
+        }
     }
 }

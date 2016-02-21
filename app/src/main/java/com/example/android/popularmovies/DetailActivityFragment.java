@@ -1,11 +1,8 @@
 package com.example.android.popularmovies;
 
-import android.app.ActionBar;
-import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.content.res.XmlResourceParser;
 import android.database.Cursor;
@@ -22,18 +19,20 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.graphics.drawable.DrawableCompat;
+import android.support.v4.view.MenuItemCompat;
+import android.support.v7.widget.ShareActionProvider;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import com.example.android.popularmovies.data.MoviesContract;
-import com.example.android.popularmovies.data.MoviesProvider;
 import com.squareup.picasso.Picasso;
 
 import java.io.BufferedReader;
@@ -41,21 +40,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * A placeholder fragment containing a simple view.
  */
 public class DetailActivityFragment extends Fragment implements android.support.v4.app.LoaderManager.LoaderCallbacks<Cursor>{
+    ShareActionProvider mShareActionProvider;
     TrailerListAdapter mTrailerListAdapter;
     MovieData movie;
     ArrayList<TrailerData> mTrailers;
     ArrayList<ReviewData> mReviews;
     Uri mUri;
     Cursor mCursor;
+    String YOUTUBE_BASE_URL = "www.youtube.com/watch?v=";
+    String mYoutubeUrl;
 
     public static final String DETAIL_URI = "detail_uri";
 
@@ -108,10 +108,32 @@ public class DetailActivityFragment extends Fragment implements android.support.
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
 //        Activity activity = getActivity();
 //        Intent intent = activity.getIntent();
 //        movie = (intent.getParcelableExtra(getString(R.string.parcellable_movie_data)));
 
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_detail_fragment, menu);
+        MenuItem shareItem = menu.findItem(R.id.action_share);
+        mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(shareItem);
+        if (mShareActionProvider != null && mYoutubeUrl != null) {
+            mShareActionProvider.setShareIntent(createShareTrailerIntent());
+        }
+        else {
+            Log.d("DetailActivity","Not able to get Action provider");
+        }
+    }
+
+    private Intent createShareTrailerIntent() {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, "Watch this trailer on Youtube: " + mYoutubeUrl);
+        return shareIntent;
     }
 
     @Override
@@ -289,6 +311,12 @@ public class DetailActivityFragment extends Fragment implements android.support.
 //                mTrailerListAdapter.addAll(trailerData);
 //                mTrailerListAdapter.notifyDataSetChanged();
                 LinearLayout linearLayout = (LinearLayout) getActivity().findViewById(R.id.trailers_container);
+                if(mTrailers != null)
+                    mYoutubeUrl = YOUTUBE_BASE_URL + mTrailers.get(0).youtubePath;
+
+                if (mShareActionProvider!= null){
+                    mShareActionProvider.setShareIntent(createShareTrailerIntent());
+                }
                 for(int i = 0; i < mTrailers.size();i++) {
                     final TextView textView = new TextView(getActivity());
                     textView.setClickable(true);

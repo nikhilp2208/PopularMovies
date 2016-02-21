@@ -20,4 +20,5 @@
     <string name="release_date">Release Date: </string>
     <string name="themoviedb_base_uri" translatable="false">http://api.themoviedb.org/3/discover/movie</string>
     <string name="themoviedb_trailers_base_uri" translatable="false">http://api.themoviedb.org/3/movie</string>
+    <string name="action_share">Share</string>
 </resources>

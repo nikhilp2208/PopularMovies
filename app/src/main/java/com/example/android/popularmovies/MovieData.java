@@ -8,7 +8,7 @@ import android.os.Parcelable;
  */
 public class MovieData implements Parcelable {
 
-    public long movie_id;
+    public String movie_id;
     public String title;
     public String overview;
     public String poster_path;
@@ -22,7 +22,7 @@ public class MovieData implements Parcelable {
     }
 
     public MovieData(Parcel in) {
-        movie_id = in.readLong();
+        movie_id = in.readString();
         title = in.readString();
         overview = in.readString();
         poster_path = in.readString();
@@ -52,7 +52,7 @@ public class MovieData implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel parcel, int i) {
-        parcel.writeLong(movie_id);
+        parcel.writeString(movie_id);
         parcel.writeString(title);
         parcel.writeString(overview);
         parcel.writeString(poster_path);

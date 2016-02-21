@@ -1,11 +1,14 @@
 package com.example.android.popularmovies;
 
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.content.res.XmlResourceParser;
+import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -14,6 +17,8 @@ import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -25,6 +30,8 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.example.android.popularmovies.data.MoviesContract;
+import com.example.android.popularmovies.data.MoviesProvider;
 import com.squareup.picasso.Picasso;
 
 import java.io.BufferedReader;
@@ -40,50 +47,160 @@ import java.util.List;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class DetailActivityFragment extends Fragment {
+public class DetailActivityFragment extends Fragment implements android.support.v4.app.LoaderManager.LoaderCallbacks<Cursor>{
     TrailerListAdapter mTrailerListAdapter;
     MovieData movie;
     ArrayList<TrailerData> mTrailers;
+    Uri mUri;
+    Cursor mCursor;
+
+    private static final int DETAIL_LOADER = 1;
+
+    private static final String[] DETAIL_COLUMNS = {
+            MoviesContract.MoviesEntry.TABLE_NAME + "." + MoviesContract.MoviesEntry._ID,
+            MoviesContract.MoviesEntry.COLUMN_MOVIE_ID,
+            MoviesContract.MoviesEntry.COLUMN_TITLE,
+            MoviesContract.MoviesEntry.COLUMN_OVERVIEW,
+            MoviesContract.MoviesEntry.COLUMN_POSTER_PATH,
+            MoviesContract.MoviesEntry.COLUMN_BACKDROP_PATH,
+            MoviesContract.MoviesEntry.COLUMN_RELEASE_DATE,
+            MoviesContract.MoviesEntry.COLUMN_VOTE_AVERAGE,
+            MoviesContract.MoviesEntry.COLUMN_VOTE_COUNT,
+            MoviesContract.MoviesEntry.COLUMN_POPULARITY,
+    };
+
+    static final int COL_ID = 0;
+    static final int COL_MOVIE_ID = 1;
+    static final int COL_TITLE = 2;
+    static final int COL_OVERVIEW = 3;
+    static final int COL_POSTER_PATH = 4;
+    static final int COL_BACKDROP_PATH = 5;
+    static final int COL_RELEASE_DATE = 6;
+    static final int COL_VOTE_AVERAGE = 7;
+    static final int COL_VOTE_COUNT = 8;
+    static final int COL_POPULARITY = 9;
+
+
+    TextView mTitleTextView;
+    TextView mReleaseTextView;
+    TextView mRatingTextView;
+    TextView mDescrptionTextView;
+    ImageView mBackDropImageView;
+    ImageView mPosterImageView;
+    ImageView mFavoriteView;
+
+    Boolean mIsFavorite;
 
     public DetailActivityFragment() {
     }
 
     @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        getLoaderManager().initLoader(DETAIL_LOADER,null,this);
+        super.onActivityCreated(savedInstanceState);
+    }
+
+    @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Activity activity = getActivity();
-        Intent intent = activity.getIntent();
-        movie = (intent.getParcelableExtra(getString(R.string.parcellable_movie_data)));
-        FetchTrailerTask fetchTrailerTask = new FetchTrailerTask();
-        fetchTrailerTask.execute(Long.toString(movie.movie_id));
+//        Activity activity = getActivity();
+//        Intent intent = activity.getIntent();
+//        movie = (intent.getParcelableExtra(getString(R.string.parcellable_movie_data)));
+
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_detail, container, false);
+
+        mUri = getActivity().getIntent().getData();
 //        Activity activity = getActivity();
 //        Intent intent = activity.getIntent();
 //        MovieData movie = (intent.getParcelableExtra(getString(R.string.parcellable_movie_data)));
-        TextView titleTextView = (TextView)view.findViewById(R.id.Title);
-        TextView releaseTextView = (TextView)view.findViewById(R.id.release_date);
-        TextView ratingTextView = (TextView)view.findViewById(R.id.rating);
-        TextView descrptionTextView = (TextView)view.findViewById(R.id.description);
-        ImageView backDropImageView = (ImageView)view.findViewById(R.id.backDropImageView);
-        ImageView posterImageView = (ImageView)view.findViewById(R.id.posterImageView);
-        Context context = getContext();
-        Picasso.with(context).load(movie.backdrop_path).into(backDropImageView);
-        Picasso.with(context).load(movie.poster_path).into(posterImageView);
-        titleTextView.setText(movie.title);
-        releaseTextView.setText(getString(R.string.release_date) + movie.release_date);
-        ratingTextView.setText(Float.toString(movie.vote_average));
-        descrptionTextView.setText(movie.overview);
-
+        mTitleTextView = (TextView)view.findViewById(R.id.Title);
+        mReleaseTextView = (TextView)view.findViewById(R.id.release_date);
+        mRatingTextView = (TextView)view.findViewById(R.id.rating);
+        mDescrptionTextView = (TextView)view.findViewById(R.id.description);
+        mBackDropImageView = (ImageView)view.findViewById(R.id.backDropImageView);
+        mPosterImageView = (ImageView)view.findViewById(R.id.posterImageView);
+        mFavoriteView = (ImageView)view.findViewById(R.id.favorite_image_view);
+        mFavoriteView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ImageView imageView = (ImageView) view;
+                if(!mIsFavorite) {
+                    imageView.setImageResource(android.R.drawable.btn_star_big_on);
+                    insertFavoriteToDb();
+                    mIsFavorite = true;
+                } else {
+                    imageView.setImageResource(android.R.drawable.btn_star_big_off);
+                    removeFavoriteFromDb();
+                    mIsFavorite = false;
+                }
+            }
+        });
 //        mTrailerListAdapter = new TrailerListAdapter(getActivity(),R.layout.trailer,new ArrayList<TrailerData>());
 //        ListView listView = (ListView) view.findViewById(R.id.trailers_listview);
 //        listView.setAdapter(mTrailerListAdapter);
 
         return view;
+    }
+
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+
+        if (null != mUri) {
+            return new CursorLoader(getActivity(),mUri,DETAIL_COLUMNS,null,null,null);
+        }
+        return null;
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        if (data != null && data.moveToFirst()) {
+            mCursor = data;
+            Context context = getContext();
+            Picasso.with(context).load(data.getString(COL_BACKDROP_PATH)).into(mBackDropImageView);
+            Picasso.with(context).load(data.getString(COL_POSTER_PATH)).into(mPosterImageView);
+            mTitleTextView.setText(data.getString(COL_TITLE));
+            mReleaseTextView.setText(getString(R.string.release_date) + data.getString(COL_RELEASE_DATE));
+            mRatingTextView.setText(Float.toString(data.getFloat(COL_VOTE_AVERAGE)));
+            mDescrptionTextView.setText(data.getString(COL_OVERVIEW));
+            FetchTrailerTask fetchTrailerTask = new FetchTrailerTask();
+            String movieId = data.getString(COL_MOVIE_ID);
+            fetchTrailerTask.execute(movieId);
+            mIsFavorite = checkiFMovieiSFavorite(movieId);
+            if (mIsFavorite) {
+                mFavoriteView.setImageResource(android.R.drawable.btn_star_big_on);
+            }
+        }
+    }
+
+
+    public Boolean checkiFMovieiSFavorite(String movieId) {
+        Uri uri = MoviesContract.FavoriteMoviesEntry.buildMoviesUriWithMovieId(movieId);
+        Cursor favMovieCursor = getContext().getContentResolver().query(uri,null,null,null,null);
+        if (favMovieCursor.getCount() == 1)
+            return true;
+        return false;
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+
+    }
+
+    private void insertFavoriteToDb() {
+        ContentValues contentValues = new ContentValues();
+        DatabaseUtils.cursorRowToContentValues(mCursor,contentValues);
+        contentValues.remove(MoviesContract.MoviesEntry._ID);
+        getContext().getContentResolver().insert(MoviesContract.FavoriteMoviesEntry.CONTENT_URI,contentValues);
+    }
+
+    private void removeFavoriteFromDb() {
+        String movieId = mCursor.getString(COL_MOVIE_ID);
+        getContext().getContentResolver().delete(MoviesContract.FavoriteMoviesEntry.buildMoviesUriWithMovieId(movieId),null,null);
     }
 
     public class FetchTrailerTask extends AsyncTask<String,Void,ArrayList<TrailerData>>{

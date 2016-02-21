@@ -4,11 +4,14 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -30,10 +33,36 @@ import java.util.Vector;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class MainActivityFragment extends Fragment {
+public class MainActivityFragment extends Fragment implements android.support.v4.app.LoaderManager.LoaderCallbacks<Cursor> {
     MovieTilesAdapter mMovieTilesAdapter;
     SharedPreferences mPreferences;
     String mSortPref;
+    private static final int MOVIES_LOADER = 0;
+    private static final int FAV_MOVIES_LOADER = 1;
+//MoviesContract.MoviesEntry.TABLE_NAME + "." +
+    private static final String[] MOVIE_COLUMNS = {
+            MoviesContract.MoviesEntry._ID,
+            MoviesContract.MoviesEntry.COLUMN_MOVIE_ID,
+            MoviesContract.MoviesEntry.COLUMN_TITLE,
+            MoviesContract.MoviesEntry.COLUMN_OVERVIEW,
+            MoviesContract.MoviesEntry.COLUMN_POSTER_PATH,
+            MoviesContract.MoviesEntry.COLUMN_BACKDROP_PATH,
+            MoviesContract.MoviesEntry.COLUMN_RELEASE_DATE,
+            MoviesContract.MoviesEntry.COLUMN_VOTE_AVERAGE,
+            MoviesContract.MoviesEntry.COLUMN_VOTE_COUNT,
+            MoviesContract.MoviesEntry.COLUMN_POPULARITY,
+    };
+
+    static final int COL_ID = 0;
+    static final int COL_MOVIE_ID = 1;
+    static final int COL_TITLE = 2;
+    static final int COL_OVERVIEW = 3;
+    static final int COL_POSTER_PATH = 4;
+    static final int COL_BACKDROP_PATH = 5;
+    static final int COL_RELEASE_DATE = 6;
+    static final int COL_VOTE_AVERAGE = 7;
+    static final int COL_VOTE_COUNT = 8;
+    static final int COL_POPULARITY = 9;
 
     public MainActivityFragment() {
     }
@@ -42,20 +71,31 @@ public class MainActivityFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-        mMovieTilesAdapter = new MovieTilesAdapter(getActivity(),R.layout.movie_tile,new ArrayList<MovieData>());
+        mMovieTilesAdapter = new MovieTilesAdapter(getActivity(),null,0);
         GridView gridView = (GridView) rootView.findViewById(R.id.movies_grid);
         gridView.setAdapter(mMovieTilesAdapter);
         gridView.setNumColumns((Configuration.ORIENTATION_PORTRAIT == getResources().getConfiguration().orientation) ? 2 : 4);
         gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                Intent detailIntent = new Intent(getActivity(),DetailActivity.class);
-                MovieData movieData = mMovieTilesAdapter.getItem(i);
-                detailIntent.putExtra(getString(R.string.parcellable_movie_data),movieData);
-                startActivity(detailIntent);
+//                Intent detailIntent = new Intent(getActivity(),DetailActivity.class);
+                Cursor cursor = (Cursor) adapterView.getItemAtPosition(i);
+                if (cursor != null) {
+                    ((Callback) getActivity()).onItemSelected(MoviesContract.MoviesEntry.buildMoviesUriWithMovieId(cursor.getString(COL_MOVIE_ID)));
+                }
+//                MovieData movieData = mMovieTilesAdapter.getItem(i);
+//                detailIntent.putExtra(getString(R.string.parcellable_movie_data),movieData);
+//                startActivity(detailIntent);
             }
         });
         return rootView;
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        getLoaderManager().initLoader(MOVIES_LOADER,null,this);
+        getLoaderManager().initLoader(FAV_MOVIES_LOADER,null,this);
+        super.onActivityCreated(savedInstanceState);
     }
 
     @Override
@@ -74,16 +114,56 @@ public class MainActivityFragment extends Fragment {
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
             if(s == getString(R.string.pref_sort_key)) {
                 mSortPref = mPreferences.getString(getString(R.string.pref_sort_key), getString(R.string.pref_sort_default));
-                FetchPopularMoviesTask fetchPopularMoviesTask = new FetchPopularMoviesTask();
-                fetchPopularMoviesTask.execute(mSortPref);
+                if (mSortPref.equals("favorite")) {
+                    Cursor cursor = getContext().getContentResolver().query(MoviesContract.FavoriteMoviesEntry.CONTENT_URI,null,null,null,null);
+                    mMovieTilesAdapter.swapCursor(cursor);
+                } else {
+                    FetchPopularMoviesTask fetchPopularMoviesTask = new FetchPopularMoviesTask();
+                    fetchPopularMoviesTask.execute(mSortPref);
+                }
             }
         }
     };
 
-    public class FetchPopularMoviesTask extends AsyncTask<String,Void,ArrayList<MovieData>> {
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        switch (id) {
+            case MOVIES_LOADER:
+                return new CursorLoader(getActivity(), MoviesContract.MoviesEntry.CONTENT_URI,MOVIE_COLUMNS,null,null,null);
+            case FAV_MOVIES_LOADER:
+                return new CursorLoader(getActivity(), MoviesContract.FavoriteMoviesEntry.CONTENT_URI,MOVIE_COLUMNS,null,null,null);
+            default:
+                return null;
+        }
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        switch (loader.getId()) {
+            case MOVIES_LOADER: {
+                Log.v("ON_MOVIES_LOAD_FINISHED", Integer.toString(data.getCount()));
+                if (!mSortPref.equals("favorite"))
+                    mMovieTilesAdapter.swapCursor(data);
+                break;
+            }
+            case FAV_MOVIES_LOADER: {
+                Log.v("ON_FAV_LOAD_FINISHED", Integer.toString(data.getCount()));
+                if (mSortPref.equals("favorite"))
+                    mMovieTilesAdapter.swapCursor(data);
+                break;
+            }
+        }
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        mMovieTilesAdapter.swapCursor(null);
+    }
+
+    public class FetchPopularMoviesTask extends AsyncTask<String,Void,Void> {
 
         @Override
-        protected ArrayList<MovieData> doInBackground(String... sort_by) {
+        protected Void doInBackground(String... sort_by) {
             final String API_KEY_PARAM = getString(R.string.api_key_param);
             final String SORT_BY_PARAM = getString(R.string.sort_by_param);
             final String API_KEY = getString(R.string.tmdb_api_key);
@@ -159,7 +239,6 @@ public class MainActivityFragment extends Fragment {
                 movieValues.put(MoviesContract.MoviesEntry.COLUMN_VOTE_AVERAGE, movieData.vote_average);
                 movieValues.put(MoviesContract.MoviesEntry.COLUMN_VOTE_COUNT, movieData.vote_count);
                 movieValues.put(MoviesContract.MoviesEntry.COLUMN_POPULARITY, movieData.popularity);
-                movieValues.put(MoviesContract.MoviesEntry.COLUMN_FAVORITE, 0);
 
                 contentValuesVector.add(movieValues);
 
@@ -174,15 +253,9 @@ public class MainActivityFragment extends Fragment {
             }
             Log.d("DB_INSERT", "DB insert completed. count: " + inserted);
         }
+    }
 
-        @Override
-        protected void onPostExecute(ArrayList<MovieData> moviesData) {
-            super.onPostExecute(moviesData);
-            if (moviesData != null) {
-                mMovieTilesAdapter.clear();
-                mMovieTilesAdapter.addAll(moviesData);
-                mMovieTilesAdapter.notifyDataSetChanged();
-            }
-        }
+    public interface Callback {
+        public void onItemSelected(Uri movieUri);
     }
 }

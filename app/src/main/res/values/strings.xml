@@ -8,8 +8,10 @@
     <string name="pref_sort">Sort</string>
     <string name="pref_sort_most_popular" translatable="false">popularity.desc</string>
     <string name="pref_sort_highest_rated" translatable="false">vote_average.desc</string>
+    <string name="pref_favorite" translatable="false">favorite</string>
     <string name="pref_sort_entry_most_popular" translatable="false">Most Popular</string>
     <string name="pref_sort_entry_highest_rated" translatable="false">Highest Rated</string>
+    <string name="pref_entry_favorite" translatable="false">Favorite</string>
     <string name="pref_sort_default" translatable="false">popularity.desc</string>
     <string name="default_image" translatable="false">http://www.definitivetech.com/images/products/product_image_not_available.gif</string>
     <string name="parcellable_movie_data" translatable="false">movie_data</string>

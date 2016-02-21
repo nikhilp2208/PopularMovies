@@ -48,7 +48,7 @@ public class MovieDataParser {
                 }
                 movieData.overview = movieJsonObject.getString(KEY_OVERVIEW);
                 movieData.release_date = movieJsonObject.getString(KEY_RELEASE_DATE);
-                movieData.movie_id = Long.parseLong(movieJsonObject.getString(KEY_ID));
+                movieData.movie_id = movieJsonObject.getString(KEY_ID);
                 movieData.title = movieJsonObject.getString(KEY_TITLE);
                 movieData.backdrop_path = IMAGE_BASE_URL+BACKDROP_IMAGE_SIZE+movieJsonObject.getString(KEY_BACKDROP_PATH);
                 movieData.popularity = Float.parseFloat(movieJsonObject.getString(KEY_POPULARITY));

@@ -27,15 +27,28 @@ public class MoviesDbHelper extends SQLiteOpenHelper {
                 MoviesContract.MoviesEntry.COLUMN_RELEASE_DATE + " TEXT, " +
                 MoviesContract.MoviesEntry.COLUMN_VOTE_AVERAGE + " REAL, " +
                 MoviesContract.MoviesEntry.COLUMN_VOTE_COUNT + " INTEGER, " +
-                MoviesContract.MoviesEntry.COLUMN_POPULARITY + " REAL, " +
-                MoviesContract.MoviesEntry.COLUMN_FAVORITE + " INTEGER DEFAULT 0);";
+                MoviesContract.MoviesEntry.COLUMN_POPULARITY + " REAL);";
+
+        final String SQL_CREATE_FAV_MOVIES_TABLE = "CREATE TABLE " + MoviesContract.FavoriteMoviesEntry.TABLE_NAME + " (" +
+                MoviesContract.MoviesEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                MoviesContract.MoviesEntry.COLUMN_MOVIE_ID + " TEXT NOT NULL, " +
+                MoviesContract.MoviesEntry.COLUMN_TITLE + " TEXT, " +
+                MoviesContract.MoviesEntry.COLUMN_OVERVIEW + " TEXT, " +
+                MoviesContract.MoviesEntry.COLUMN_POSTER_PATH + " TEXT, " +
+                MoviesContract.MoviesEntry.COLUMN_BACKDROP_PATH + " TEXT, " +
+                MoviesContract.MoviesEntry.COLUMN_RELEASE_DATE + " TEXT, " +
+                MoviesContract.MoviesEntry.COLUMN_VOTE_AVERAGE + " REAL, " +
+                MoviesContract.MoviesEntry.COLUMN_VOTE_COUNT + " INTEGER, " +
+                MoviesContract.MoviesEntry.COLUMN_POPULARITY + " REAL);";
 
         sqLiteDatabase.execSQL(SQL_CREATE_MOVIES_TABLE);
+        sqLiteDatabase.execSQL(SQL_CREATE_FAV_MOVIES_TABLE);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
         sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + MoviesContract.MoviesEntry.TABLE_NAME);
+        sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + MoviesContract.FavoriteMoviesEntry.TABLE_NAME);
         onCreate(sqLiteDatabase);
     }
 }

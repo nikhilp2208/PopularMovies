@@ -311,7 +311,7 @@ public class DetailActivityFragment extends Fragment implements android.support.
 //                mTrailerListAdapter.addAll(trailerData);
 //                mTrailerListAdapter.notifyDataSetChanged();
                 LinearLayout linearLayout = (LinearLayout) getActivity().findViewById(R.id.trailers_container);
-                if(mTrailers != null)
+                if((mTrailers != null) && (mTrailers.size() > 0))
                     mYoutubeUrl = YOUTUBE_BASE_URL + mTrailers.get(0).youtubePath;
 
                 if (mShareActionProvider!= null){
@@ -320,9 +320,9 @@ public class DetailActivityFragment extends Fragment implements android.support.
                 for(int i = 0; i < mTrailers.size();i++) {
                     final TextView textView = new TextView(getActivity());
                     textView.setClickable(true);
-                    textView.setLines(1);
-                    textView.setPadding(5, 5, 5, 5);
-                    textView.setTextSize(30);
+//                    textView.setLines(1);
+                    textView.setPadding(15, 15, 15, 15);
+                    textView.setTextSize(20);
                     textView.setId(i);
                     ColorStateList cl = null;
                     try {
@@ -341,6 +341,7 @@ public class DetailActivityFragment extends Fragment implements android.support.
                         }
                     });
                     textView.setText(mTrailers.get(i).name);
+                    textView.setHapticFeedbackEnabled(true);
                     setCompoundDrawable(textView,R.drawable.play_icon);
                     linearLayout.addView(textView);
                 }

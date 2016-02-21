@@ -1,5 +1,6 @@
 package com.example.android.popularmovies;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
@@ -10,6 +11,7 @@ import android.content.res.XmlResourceParser;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -51,6 +53,7 @@ public class DetailActivityFragment extends Fragment implements android.support.
     TrailerListAdapter mTrailerListAdapter;
     MovieData movie;
     ArrayList<TrailerData> mTrailers;
+    ArrayList<ReviewData> mReviews;
     Uri mUri;
     Cursor mCursor;
 
@@ -175,8 +178,10 @@ public class DetailActivityFragment extends Fragment implements android.support.
             mRatingTextView.setText(Float.toString(data.getFloat(COL_VOTE_AVERAGE)));
             mDescrptionTextView.setText(data.getString(COL_OVERVIEW));
             FetchTrailerTask fetchTrailerTask = new FetchTrailerTask();
+            FetchReviewsTask fetchReviewsTask = new FetchReviewsTask();
             String movieId = data.getString(COL_MOVIE_ID);
             fetchTrailerTask.execute(movieId);
+            fetchReviewsTask.execute(movieId);
             mIsFavorite = checkiFMovieiSFavorite(movieId);
             if (mIsFavorite) {
                 mFavoriteView.setImageResource(android.R.drawable.btn_star_big_on);
@@ -320,6 +325,103 @@ public class DetailActivityFragment extends Fragment implements android.support.
             ratingIcon = new BitmapDrawable(getResources(), Bitmap.createScaledBitmap(bitmap, 50, 50, true));
             ratingIcon = DrawableCompat.wrap(ratingIcon);
             view.setCompoundDrawablesWithIntrinsicBounds(ratingIcon, null, null, null);
+        }
+    }
+
+
+    public class FetchReviewsTask extends AsyncTask<String,Void,ArrayList<ReviewData>>{
+
+        @Override
+        protected ArrayList<ReviewData> doInBackground(String... movieIds) {
+            final String API_KEY_PARAM = getString(R.string.api_key_param);
+            final String API_KEY = getString(R.string.tmdb_api_key);
+            final String BASE_URI = getString(R.string.themoviedb_trailers_base_uri);
+            final String LOG_TAG = this.getClass().getSimpleName();
+            final String REVIEWS_PATH = "reviews";
+            HttpURLConnection httpURLConnection = null;
+            BufferedReader bufferedReader = null;
+
+            String movieReviewsResponse = null;
+
+            try {
+                Uri uri = Uri.parse(BASE_URI).buildUpon().appendPath(movieIds[0]).appendPath(REVIEWS_PATH).appendQueryParameter(API_KEY_PARAM,API_KEY).build();
+                URL url = new URL(uri.toString());
+                Log.v("URL", uri.toString());
+                httpURLConnection = (HttpURLConnection) url.openConnection();
+                httpURLConnection.setRequestMethod("GET");
+                httpURLConnection.connect();
+                InputStream inputStream = httpURLConnection.getInputStream();
+                if(inputStream == null) {
+                    return null;
+                }
+                bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+
+                String line;
+                StringBuffer stringBuffer = new StringBuffer();
+
+                if ((line = bufferedReader.readLine()) != null) {
+                    stringBuffer.append(line);
+                }
+
+                movieReviewsResponse = stringBuffer.toString();
+                Log.v(LOG_TAG,movieReviewsResponse);
+                try {
+                    return ReviewDataParser.fetch(movieReviewsResponse,getActivity());
+                } catch (Exception e) {
+                    Log.e(LOG_TAG,e.getMessage(),e);
+                    e.printStackTrace();
+                    return null;
+                }
+
+
+            } catch (IOException e) {
+                Log.e(LOG_TAG,e.getMessage(),e);
+                e.printStackTrace();
+                return null;
+            } finally {
+                if (httpURLConnection != null) {
+                    httpURLConnection.disconnect();
+                }
+
+                if (bufferedReader != null) {
+                    try {
+                        bufferedReader.close();
+                    } catch (IOException e) {
+                        Log.e(LOG_TAG,e.getMessage(),e);
+                    }
+                }
+            }
+
+        }
+
+        @Override
+        protected void onPostExecute(ArrayList<ReviewData> reviewData) {
+            super.onPostExecute(reviewData);
+            if (reviewData != null) {
+                mReviews = reviewData;
+                LinearLayout reviewContainerLayout = (LinearLayout) getActivity().findViewById(R.id.reviews_container);
+                for(int i = 0; i < mReviews.size();i++) {
+                    LinearLayout linearLayout = new LinearLayout(getActivity());
+                    final TextView authorTextView = new TextView(getActivity());
+                    final TextView contentTextView = new TextView(getActivity());
+                    authorTextView.setPadding(5, 5, 5, 5);
+                    authorTextView.setTextSize(20);
+                    contentTextView.setPadding(5, 5, 5, 10);
+
+                    final View horizontalSeparatorView = new View(getActivity());
+                    horizontalSeparatorView.setBackgroundColor(Color.parseColor("#ddcccc"));
+                    horizontalSeparatorView.setMinimumHeight(1);
+
+                    linearLayout.setId(i);
+                    linearLayout.setOrientation(LinearLayout.VERTICAL);
+                    linearLayout.addView(horizontalSeparatorView);
+                    linearLayout.addView(authorTextView);
+                    linearLayout.addView(contentTextView);
+                    authorTextView.setText(mReviews.get(i).author);
+                    contentTextView.setText(mReviews.get(i).content);
+                    reviewContainerLayout.addView(linearLayout);
+                }
+            }
         }
     }
 }

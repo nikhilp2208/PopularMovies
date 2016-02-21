@@ -10,6 +10,7 @@ import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.util.Log;
@@ -37,6 +38,9 @@ public class MainActivityFragment extends Fragment implements android.support.v4
     MovieTilesAdapter mMovieTilesAdapter;
     SharedPreferences mPreferences;
     String mSortPref;
+    int mCurrentPosition;
+    private static final String CURSOR_CURRENT_POS = "current_pos_cursor";
+
     private static final int MOVIES_LOADER = 0;
     private static final int FAV_MOVIES_LOADER = 1;
 //MoviesContract.MoviesEntry.TABLE_NAME + "." +
@@ -72,6 +76,9 @@ public class MainActivityFragment extends Fragment implements android.support.v4
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
         mMovieTilesAdapter = new MovieTilesAdapter(getActivity(),null,0);
+        if (savedInstanceState != null && savedInstanceState.containsKey(CURSOR_CURRENT_POS)) {
+            mCurrentPosition = savedInstanceState.getInt(CURSOR_CURRENT_POS);
+        }
         GridView gridView = (GridView) rootView.findViewById(R.id.movies_grid);
         gridView.setAdapter(mMovieTilesAdapter);
         gridView.setNumColumns((Configuration.ORIENTATION_PORTRAIT == getResources().getConfiguration().orientation) ? 2 : 3);
@@ -81,6 +88,7 @@ public class MainActivityFragment extends Fragment implements android.support.v4
 //                Intent detailIntent = new Intent(getActivity(),DetailActivity.class);
                 Cursor cursor = (Cursor) adapterView.getItemAtPosition(i);
                 if (cursor != null) {
+                    mCurrentPosition = i;
                     ((Callback) getActivity()).onItemSelected(MoviesContract.MoviesEntry.buildMoviesUriWithMovieId(cursor.getString(COL_MOVIE_ID)));
                 }
 //                MovieData movieData = mMovieTilesAdapter.getItem(i);
@@ -93,8 +101,8 @@ public class MainActivityFragment extends Fragment implements android.support.v4
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
-        getLoaderManager().initLoader(MOVIES_LOADER,null,this);
-        getLoaderManager().initLoader(FAV_MOVIES_LOADER,null,this);
+        getLoaderManager().initLoader(MOVIES_LOADER, null, this);
+        getLoaderManager().initLoader(FAV_MOVIES_LOADER, null, this);
         super.onActivityCreated(savedInstanceState);
     }
 
@@ -102,28 +110,66 @@ public class MainActivityFragment extends Fragment implements android.support.v4
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
-        mPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        mPreferences.registerOnSharedPreferenceChangeListener(listener);
-        mSortPref = mPreferences.getString(getString(R.string.pref_sort_key), getString(R.string.pref_sort_default));
+//        mPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+//        mPreferences.registerOnSharedPreferenceChangeListener(listener);
+//        mSortPref = mPreferences.getString(getString(R.string.pref_sort_key), getString(R.string.pref_sort_default));
+        mSortPref = Utility.getSortOrder(getActivity());
         FetchPopularMoviesTask fetchPopularMoviesTask = new FetchPopularMoviesTask();
         fetchPopularMoviesTask.execute(mSortPref);
     }
 
-    SharedPreferences.OnSharedPreferenceChangeListener listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
-        @Override
-        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
-            if(s == getString(R.string.pref_sort_key)) {
-                mSortPref = mPreferences.getString(getString(R.string.pref_sort_key), getString(R.string.pref_sort_default));
-                if (mSortPref.equals("favorite")) {
-                    Cursor cursor = getContext().getContentResolver().query(MoviesContract.FavoriteMoviesEntry.CONTENT_URI,null,null,null,null);
-                    mMovieTilesAdapter.swapCursor(cursor);
-                } else {
-                    FetchPopularMoviesTask fetchPopularMoviesTask = new FetchPopularMoviesTask();
-                    fetchPopularMoviesTask.execute(mSortPref);
-                }
-            }
+    @Override
+    public void onResume() {
+        super.onResume();
+        String sortOrder = Utility.getSortOrder(getActivity());
+        if (sortOrder != null && !sortOrder.equals(mSortPref)) {
+            mSortPref = sortOrder;
+            onSortPrefChanged(sortOrder);
+        } else {
+            GridView gridView = (GridView) getActivity().findViewById(R.id.movies_grid);
+            gridView.smoothScrollToPosition(mCurrentPosition);
         }
-    };
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        if (mCurrentPosition!= GridView.INVALID_POSITION) {
+            outState.putInt(CURSOR_CURRENT_POS,mCurrentPosition);
+        }
+        super.onSaveInstanceState(outState);
+    }
+
+    LoaderManager.LoaderCallbacks<Cursor> mLoaderCallbacks = this;
+
+//    SharedPreferences.OnSharedPreferenceChangeListener listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+//        @Override
+//        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+//            if(s == getString(R.string.pref_sort_key)) {
+//                mSortPref = mPreferences.getString(getString(R.string.pref_sort_key), getString(R.string.pref_sort_default));
+//                if (mSortPref.equals("favorite")) {
+////                    Cursor cursor = getContext().getContentResolver().query(MoviesContract.FavoriteMoviesEntry.CONTENT_URI,null,null,null,null);
+////                    mMovieTilesAdapter.swapCursor(cursor);
+//                    getLoaderManager().restartLoader(FAV_MOVIES_LOADER,null, mLoaderCallbacks);
+//                } else {
+//                    FetchPopularMoviesTask fetchPopularMoviesTask = new FetchPopularMoviesTask();
+//                    fetchPopularMoviesTask.execute(mSortPref);
+//                    getLoaderManager().restartLoader(MOVIES_LOADER,null, mLoaderCallbacks);
+//                }
+//            }
+//        }
+//    };
+
+    public void onSortPrefChanged(String sortPref) {
+        if (sortPref.equals("favorite")) {
+//                    Cursor cursor = getContext().getContentResolver().query(MoviesContract.FavoriteMoviesEntry.CONTENT_URI,null,null,null,null);
+//                    mMovieTilesAdapter.swapCursor(cursor);
+            getLoaderManager().restartLoader(FAV_MOVIES_LOADER,null, mLoaderCallbacks);
+        } else {
+            FetchPopularMoviesTask fetchPopularMoviesTask = new FetchPopularMoviesTask();
+            fetchPopularMoviesTask.execute(sortPref);
+            getLoaderManager().restartLoader(MOVIES_LOADER,null, mLoaderCallbacks);
+        }
+    }
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
@@ -147,9 +193,11 @@ public class MainActivityFragment extends Fragment implements android.support.v4
                 break;
             }
             case FAV_MOVIES_LOADER: {
-                Log.v("ON_FAV_LOAD_FINISHED", Integer.toString(data.getCount()));
-                if (mSortPref.equals("favorite"))
+                if (mSortPref.equals("favorite")) {
+                    Log.v("ON_FAV_LOAD_FINISHED", Integer.toString(data.getCount()));
+                    mMovieTilesAdapter.swapCursor(null);
                     mMovieTilesAdapter.swapCursor(data);
+                }
                 break;
             }
         }
@@ -245,6 +293,9 @@ public class MainActivityFragment extends Fragment implements android.support.v4
             }
 
             int inserted = 0;
+            int deleted = 0;
+            deleted = getContext().getContentResolver().delete(MoviesContract.MoviesEntry.CONTENT_URI,null,null);
+            Log.d("DB_DELETE", "DB delete completed.: " + deleted);
             if (contentValuesVector.size() > 0) {
                 ContentValues[] contentValues = new ContentValues[contentValuesVector.size()];
                 contentValuesVector.toArray(contentValues);
